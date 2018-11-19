@@ -8,7 +8,7 @@
 
                 <div class="card-tools">
                     <!-- btn for modal calling of new user -->
-                    <button class="btn btn-success" data-toggle="modal" data-target="#userAddmodal">Add New User <i class="fa fa-user-plus fa-fw"></i></button>
+                    <button class="btn btn-success" @click="openaddModal">Add New User <i class="fa fa-user-plus fa-fw"></i></button>
                 </div>
               </div>
               <!-- /.card-header -->
@@ -31,8 +31,8 @@
                     <td>{{user.type | capitalize}}</td>
                     <td>{{user.created_at | dateChange}}</td>
                     <td>
-                        <a href=""> <i class="fa fa-edit text-blue"></i>   </a>
-                        <a href=""> <i class="fa fa-trash text-red"></i>   </a>
+                        <a href="#" @click.prevent="openeditModal(user)"> <i class="fa fa-edit text-blue"></i>   </a>
+                        <a href="#" @click.prevent="deleteUser(user.id)"> <i class="fa fa-trash text-red"></i>   </a>
                     </td>
                   </tr>
                 </tbody></table>
@@ -48,13 +48,14 @@
                 <div class="modal-dialog modal-dialog-centered" role="document">
                     <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="exampleModalLabel">Add New</h5>
+                        <h5 v-show="!edit" class="modal-title" id="exampleModalLabel">Add New</h5>
+                        <h5 v-show="edit" class="modal-title" id="exampleModalLabel">Update User</h5>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
                     <!-- form for submitting user data used vForm package-->
-                <form @submit.prevent="sendUserData" @keydown="form.onKeydown($event)">
+                <form @submit.prevent="edit ? updateUserData() : sendUserData() " @keydown="form.onKeydown($event)">
                     <div class="modal-body">
                         <div class="form-group">
                                 <input v-model="form.name" type="text" name="name" placeholder="Name"
@@ -88,7 +89,8 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-info">Save changes</button>
+                        <button type="submit" v-show="!edit" class="btn btn-info">Save changes</button>
+                        <button type="submit" v-show="edit" class="btn btn-primary">Update changes</button>
                     </div>
                 </form>
                 <!-- end of form -->
@@ -104,8 +106,11 @@
     export default {
         data(){
             return {
+
                 users:{},
+                edit : false,
                 form : new Form({
+                    id:'',
                     name : '',
                     email: '',
                     type: '',
@@ -116,19 +121,117 @@
             }
         },
        methods:{
+           //delete User method
+                deleteUser(id){
+                        swal({
+                            title: 'Are you sure?',
+                            text: "You won't be able to revert this!",
+                            type: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#3085d6',
+                            cancelButtonColor: '#d33',
+                            confirmButtonText: 'Yes, delete it!'
+                            }).then((result) => {
+
+                                if (result.value) {
+                                      //send ajax request to server
+                                    this.form.delete('api/user/' + id).then(()=>{
+                                        //fire the event trigger
+                                        Fire.$emit('dataupdated');
+                                            swal(
+                                                'Deleted!',
+                                                'Your file has been deleted.',
+                                                'success'
+                                                )
+                                    }).catch(()=>{
+                                        swal('Oops!!','Something went wrong','warning');
+                                    });
+                                }
+
+                            })
+            },
            //get the userdata from controller
            getUsers(){
                axios.get("api/user")
                .then(({ data }) => (this.users=data.data)); //using axios to get the data form controller through api url and passing it to local var
            },
            sendUserData(){
+               //starting of progress bar
+                this.$Progress.start();
             //    sending user data to the follwing url through laravel api
-                this.form.post('/api/user');
+                this.form.post('/api/user')
+                .then(()=>{ //promise if the request is successfull
+                     //Fire a trigger to the listeners
+                        Fire.$emit('dataupdated');
+                         //hide the modal after user created
 
+                        $('#userAddmodal').modal('hide');
+
+                        //show sweet alert after success
+                        toast({
+                                type: 'success',
+                                title: 'User created Successfully'
+                            })
+                        })
+                .catch(()=>{
+                    this.$Progress.fail();
+                    swal('Oops!!','Something went wrong','warning');
+                }); //catch error if request is unsuccessful
+
+
+
+                this.$Progress.finish()
+
+           },
+           updateUserData(){
+               this.$Progress.start();
+            //    sending user data to the follwing url through laravel api
+                this.form.put('/api/user/' + this.form.id)
+                .then(()=>{ //promise if the request is successfull
+                     //Fire a trigger to the listeners
+                        Fire.$emit('dataupdated');
+                         //hide the modal after user updated
+
+                        $('#userAddmodal').modal('hide');
+
+                        //show sweet alert after success
+                        toast({
+                                type: 'success',
+                                title: 'Updated Successfully'
+                            })
+                        })
+                .catch(()=>{
+                      swal('Oops!!','Something went wrong','warning');
+                }); //catch error if request is unsuccessful
+
+
+
+                this.$Progress.finish()
+
+           },
+
+           openaddModal(){
+               this.edit = false;
+               //using vform reset function to remove all data from form
+               this.form.reset();
+               //show form modal
+                $('#userAddmodal').modal('show');
+           },
+            openeditModal(user){
+                this.edit = true;
+               //using vform fill function to fill all data from form
+                this.form.fill(user);
+               //show form modal
+                $('#userAddmodal').modal('show');
            }
        },
        created(){
+           //run this function in start
            this.getUsers();
+           //catch the event triggers
+           Fire.$on('dataupdated',()=>{
+                this.getUsers();
+           });
        }
     }
 </script>
