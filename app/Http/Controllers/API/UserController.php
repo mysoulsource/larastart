@@ -14,6 +14,11 @@ class UserController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
+    public function __construc(){
+        $this->middleware('auth:api');
+    }
+
+
     public function index()
     {
         return User::latest()->paginate(10);
@@ -52,6 +57,14 @@ class UserController extends Controller
     {
         //
     }
+
+    //profile function to send current user data
+    public function profile()
+    {
+        ///for api authenticated users
+        return auth('api')->user();
+    }
+
 
     /**
      * Update the specified resource in storage.

@@ -61,12 +61,27 @@ Vue.use(VueRouter)
  *
  * Eg. ./components/ExampleComponent.vue -> <example-component></example-component>
  */
+//for testing purposes
+Vue.component(
+    'passport-clients',
+    require('./components/passport/Clients.vue')
+);
 
+Vue.component(
+    'passport-authorized-clients',
+    require('./components/passport/AuthorizedClients.vue')
+);
+
+Vue.component(
+    'passport-personal-access-tokens',
+    require('./components/passport/PersonalAccessTokens.vue')
+);
  ///setting Vue routes. Using let for future changes
 let routes = [
     { path: '/dashboard', component: require('./components/Dashboard.vue') },
     { path: '/profile', component: require('./components/Profile.vue') },
-    { path: '/users', component: require('./components/Users.vue') }
+    { path: '/users', component: require('./components/Users.vue') },
+    { path: '/developer', component: require('./components/Developer.vue') }
   ]
 
 
