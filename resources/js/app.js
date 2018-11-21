@@ -17,7 +17,8 @@ import { Form, HasError, AlertError } from 'vform'
 //import moment from package for date converting
 import moment from 'moment'
 import VueProgressBar from 'vue-progressbar'
-import Swal from 'sweetalert2';
+import Swal from 'sweetalert2'
+import Gate from './Gate' //importing Gate class
 //end of imports
 
 window.swal = Swal;
@@ -76,6 +77,11 @@ Vue.component(
     'passport-personal-access-tokens',
     require('./components/passport/PersonalAccessTokens.vue')
 );
+Vue.component(
+    'empty',
+    require('./components/Empty.vue')
+);
+Vue.component('pagination', require('laravel-vue-pagination'));
  ///setting Vue routes. Using let for future changes
 let routes = [
     { path: '/dashboard', component: require('./components/Dashboard.vue') },
@@ -84,6 +90,8 @@ let routes = [
     { path: '/developer', component: require('./components/Developer.vue') }
   ]
 
+  //prototyping vue gate
+  Vue.prototype.$gate = new Gate(window.user);
 
 const router = new VueRouter({
     mode:'history',

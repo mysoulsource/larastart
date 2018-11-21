@@ -1,6 +1,6 @@
 <template>
     <div class="container">
-        <div class="row mt-5">
+        <div class="row mt-5" v-if="$gate.isAdminOrAuthor()">
           <div class="col-12">
             <div class="card">
               <div class="card-header">
@@ -24,7 +24,7 @@
                     <th>Resgistered At</th>
                     <th>Modify</th>
                   </tr>
-                  <tr v-for="user in users" :key="user.id">
+                  <tr v-for="user in users.data" :key="user.id">
                     <td>{{ user.id }}</td>
                     <td>{{ user.name }}</td>
                     <td>{{ user.email }}</td>
@@ -39,9 +39,16 @@
                 <!-- end of table -->
               </div>
               <!-- /.card-body -->
+              <div class="card-footer">
+                  <pagination :data="users" @pagination-change-page="getResults"></pagination>
+              </div>
             </div>
             <!-- /.card -->
           </div>
+        </div>
+
+        <div v-if="(!$gate.isAdminOrAuthor())">
+            <empty></empty>
         </div>
         <!-- Modal for user creation -->
             <div class="modal fade" id="userAddmodal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
@@ -99,7 +106,12 @@
                 </div>
             </div>
         <!-- End of Modal -->
+
+
+
+
     </div>
+
 </template>
 
 <script>
@@ -121,6 +133,14 @@
             }
         },
        methods:{
+
+           //get Result
+          getResults(page = 1) {
+			axios.get('api/user?page=' + page)
+				.then(response => {
+					this.users = response.data;
+				});
+		},
            //delete User method
                 deleteUser(id){
                         swal({
@@ -152,61 +172,67 @@
             },
            //get the userdata from controller
            getUsers(){
-               axios.get("api/user")
-               .then(({ data }) => (this.users=data.data)); //using axios to get the data form controller through api url and passing it to local var
+               if(this.$gate.isAdminOrAuthor()){
+                     axios.get("api/user")
+               .then(({ data }) => (this.users=data)); //using axios to get the data form controller through api url and passing it to local var
+               }
+
            },
            sendUserData(){
-               //starting of progress bar
-                this.$Progress.start();
-            //    sending user data to the follwing url through laravel api
-                this.form.post('/api/user')
-                .then(()=>{ //promise if the request is successfull
-                     //Fire a trigger to the listeners
-                        Fire.$emit('dataupdated');
-                         //hide the modal after user created
+                if(this.$gate.isAdmin()){
+                    //starting of progress bar
+                        this.$Progress.start();
+                    //    sending user data to the follwing url through laravel api
+                        this.form.post('/api/user')
+                        .then(()=>{ //promise if the request is successfull
+                            //Fire a trigger to the listeners
+                                Fire.$emit('dataupdated');
+                                //hide the modal after user created
 
-                        $('#userAddmodal').modal('hide');
+                                $('#userAddmodal').modal('hide');
 
-                        //show sweet alert after success
-                        toast({
-                                type: 'success',
-                                title: 'User created Successfully'
-                            })
-                        })
-                .catch(()=>{
-                    this.$Progress.fail();
-                    swal('Oops!!','Something went wrong','warning');
-                }); //catch error if request is unsuccessful
+                                //show sweet alert after success
+                                toast({
+                                        type: 'success',
+                                        title: 'User created Successfully'
+                                    })
+                                })
+                        .catch(()=>{
+                            this.$Progress.fail();
+                            swal('Oops!!','Something went wrong','warning');
+                        }); //catch error if request is unsuccessful
 
 
 
-                this.$Progress.finish()
-
+                        this.$Progress.finish()
+                }
            },
            updateUserData(){
-               this.$Progress.start();
-            //    sending user data to the follwing url through laravel api
-                this.form.put('/api/user/' + this.form.id)
-                .then(()=>{ //promise if the request is successfull
-                     //Fire a trigger to the listeners
-                        Fire.$emit('dataupdated');
-                         //hide the modal after user updated
+               if(this.$gate.isAdminOrAuthor()){
+                    this.$Progress.start();
+                    //    sending user data to the follwing url through laravel api
+                        this.form.put('/api/user/' + this.form.id)
+                        .then(()=>{ //promise if the request is successfull
+                            //Fire a trigger to the listeners
+                                Fire.$emit('dataupdated');
+                                //hide the modal after user updated
 
-                        $('#userAddmodal').modal('hide');
+                                $('#userAddmodal').modal('hide');
 
-                        //show sweet alert after success
-                        toast({
-                                type: 'success',
-                                title: 'Updated Successfully'
-                            })
-                        })
-                .catch(()=>{
-                      swal('Oops!!','Something went wrong','warning');
-                }); //catch error if request is unsuccessful
+                                //show sweet alert after success
+                                toast({
+                                        type: 'success',
+                                        title: 'Updated Successfully'
+                                    })
+                                })
+                        .catch(()=>{
+                            swal('Oops!!','Something went wrong','warning');
+                        }); //catch error if request is unsuccessful
 
 
 
-                this.$Progress.finish()
+                        this.$Progress.finish()
+               }
 
            },
 
@@ -227,10 +253,11 @@
        },
        created(){
            //run this function in start
-           this.getUsers();
+        //    this.getUsers();
+           this.getResults();
            //catch the event triggers
            Fire.$on('dataupdated',()=>{
-                this.getUsers();
+                this.getResults();
            });
        }
     }
